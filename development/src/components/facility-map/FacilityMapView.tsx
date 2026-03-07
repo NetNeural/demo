@@ -636,10 +636,11 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
     }
   }
 
-  // Real-time device status subscription (UPDATE + INSERT)
+  // Real-time subscriptions: devices, facility_maps, placements, zones
   useEffect(() => {
     const channel = supabaseRef.current
-      .channel('facility-map-devices')
+      .channel(`facility-map-realtime-${organizationId}`)
+      // --- Devices: UPDATE, INSERT, DELETE ---
       .on(
         'postgres_changes',
         {
@@ -654,7 +655,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
           setDevices((prev) =>
             prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d))
           )
-          // Also update placement device data
           setPlacements((prev) =>
             prev.map((p) =>
               p.device_id === updated.id
@@ -676,7 +676,6 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
         (payload: any) => {
           const newDevice = payload.new as PlacedDevice
           setDevices((prev) => {
-            // Avoid duplicates
             if (prev.some((d) => d.id === newDevice.id)) return prev
             return [...prev, newDevice].sort((a, b) =>
               a.name.localeCompare(b.name)
@@ -684,12 +683,86 @@ export function FacilityMapView({ organizationId }: FacilityMapViewProps) {
           })
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'devices',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const deletedId = payload.old?.id
+          if (deletedId) {
+            setDevices((prev) => prev.filter((d) => d.id !== deletedId))
+            setPlacements((prev) =>
+              prev.filter((p) => p.device_id !== deletedId)
+            )
+          }
+        }
+      )
+      // --- Facility Maps: INSERT, UPDATE, DELETE ---
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'facility_maps',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => { loadMaps() }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'facility_maps',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => { loadMaps() }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'facility_maps',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => { loadMaps() }
+      )
+      // --- Device Map Placements: all events → reload placements ---
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'device_map_placements',
+        },
+        () => {
+          loadPlacements()
+          loadAllPlacements()
+          loadMapPlacementCounts()
+        }
+      )
+      // --- Facility Map Zones: all events → reload zones ---
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'facility_map_zones',
+        },
+        () => { loadZones() }
+      )
       .subscribe()
 
     return () => {
       supabaseRef.current.removeChannel(channel)
     }
-  }, [organizationId])
+  }, [organizationId, loadMaps, loadPlacements, loadAllPlacements, loadMapPlacementCounts, loadZones])
 
   // --- Map CRUD ---
   const handleSaveMap = useCallback(

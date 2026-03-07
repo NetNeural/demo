@@ -11,6 +11,7 @@ import React, {
 } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import { createClient } from '@/lib/supabase/client'
 import type {
   UserOrganization,
   OrganizationPermissions,
@@ -297,6 +298,40 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   useEffect(() => {
     fetchOrganizationStats()
   }, [fetchOrganizationStats])
+
+  // Real-time: auto-refresh dashboard stats when devices or alerts change
+  useEffect(() => {
+    if (!currentOrgId || !user?.id) return
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`org-stats-${currentOrgId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'devices',
+          filter: `organization_id=eq.${currentOrgId}`,
+        },
+        () => { fetchOrganizationStats() }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'alerts',
+          filter: `organization_id=eq.${currentOrgId}`,
+        },
+        () => { fetchOrganizationStats() }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentOrgId, user?.id, fetchOrganizationStats])
 
   // Validate saved organization when organizations load
   useEffect(() => {

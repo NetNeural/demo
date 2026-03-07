@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import { createClient } from '@/lib/supabase/client'
 import { handleApiError } from '@/lib/sentry-utils'
 import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -249,6 +250,40 @@ export function AlertsList() {
   useEffect(() => {
     fetchAlerts()
   }, [fetchAlerts])
+
+  // Real-time alerts subscription — new alerts and acknowledgements appear instantly
+  useEffect(() => {
+    if (!currentOrganization?.id) return
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`alerts-realtime-${currentOrganization.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'alerts',
+          filter: `organization_id=eq.${currentOrganization.id}`,
+        },
+        () => { fetchAlerts() }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'alerts',
+          filter: `organization_id=eq.${currentOrganization.id}`,
+        },
+        () => { fetchAlerts() }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentOrganization?.id, fetchAlerts])
 
   // Load timeline when detail dialog opens
   useEffect(() => {

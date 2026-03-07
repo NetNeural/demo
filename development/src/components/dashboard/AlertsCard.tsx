@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useEffect, useState, useCallback } from 'react'
 import { edgeFunctions } from '@/lib/edge-functions/client'
+import { createClient } from '@/lib/supabase/client'
 import { useOrganization } from '@/contexts/OrganizationContext'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -93,6 +94,30 @@ export function AlertsCard() {
   useEffect(() => {
     fetchAlerts()
   }, [fetchAlerts])
+
+  // Real-time: refresh alerts card when new alerts arrive or get acknowledged
+  useEffect(() => {
+    if (!currentOrganization?.id) return
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`dashboard-alerts-${currentOrganization.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'alerts',
+          filter: `organization_id=eq.${currentOrganization.id}`,
+        },
+        () => { fetchAlerts() }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentOrganization?.id, fetchAlerts])
 
   const handleAcknowledgeAlert = async (alertId: string) => {
     const alert = alerts.find((a) => a.id === alertId)

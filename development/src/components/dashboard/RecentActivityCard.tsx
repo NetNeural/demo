@@ -91,6 +91,29 @@ export function RecentActivityCard() {
     fetchActivities()
   }, [fetchActivities])
 
+  // Real-time: new audit log entries appear instantly
+  useEffect(() => {
+    if (!currentOrganization?.id) return
+
+    const channel = supabase
+      .channel(`dashboard-activity-${currentOrganization.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_audit_log',
+          filter: `organization_id=eq.${currentOrganization.id}`,
+        },
+        () => { fetchActivities() }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentOrganization?.id, supabase, fetchActivities])
+
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
       case 'device_added':

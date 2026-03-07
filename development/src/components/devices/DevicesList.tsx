@@ -468,6 +468,65 @@ export function DevicesList() {
     return () => clearInterval(intervalId)
   }, [autoRefresh, handleRefresh])
 
+  // Real-time device subscription — instant UI refresh on changes
+  useEffect(() => {
+    if (!currentOrganization?.id) return
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`devices-list-${currentOrganization.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'devices',
+          filter: `organization_id=eq.${currentOrganization.id}`,
+        },
+        () => {
+          fetchDevices(true)
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'device_telemetry_history',
+        },
+        (payload) => {
+          // Update telemetry in-place for the specific device
+          const row = payload.new as TelemetryReading
+          if (!row?.device_id) return
+          // Only update if this device is in our current list
+          setLatestTelemetry((prev) => {
+            if (!prev[row.device_id] && !devices.some((d) => d.id === row.device_id)) return prev
+            const expanded = expandFlatTelemetryRow(row)
+            const existing = prev[row.device_id] || []
+            const updated = [...existing]
+            for (const reading of expanded) {
+              const sensorKey =
+                reading.telemetry.type != null
+                  ? `type_${reading.telemetry.type}`
+                  : reading.telemetry.sensor || 'unknown'
+              const idx = updated.findIndex((r) => {
+                const k = r.telemetry.type != null ? `type_${r.telemetry.type}` : r.telemetry.sensor || 'unknown'
+                return k === sensorKey
+              })
+              if (idx >= 0) updated[idx] = reading
+              else updated.push(reading)
+            }
+            return { ...prev, [row.device_id]: updated }
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentOrganization?.id, fetchDevices, devices])
+
   // Listen for device-added events from AddDeviceDialog
   useEffect(() => {
     const handleDeviceAdded = () => {
