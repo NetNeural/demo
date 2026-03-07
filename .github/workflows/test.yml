@@ -26,6 +26,7 @@ jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    if: github.repository == 'NetNeural/MonoRepo-Staging'
     timeout-minutes: 10
     
     defaults:

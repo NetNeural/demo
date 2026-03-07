@@ -303,11 +303,18 @@ function LoginForm() {
 
         if (!rememberMe && data.session) {
           // Move session from localStorage to sessionStorage so it clears on browser close
-          const storageKey = `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').hostname.split('.')[0]}-auth-token`
-          const stored = localStorage.getItem(storageKey)
-          if (stored) {
-            sessionStorage.setItem(storageKey, stored)
-            localStorage.removeItem(storageKey)
+          try {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+            if (supabaseUrl) {
+              const storageKey = `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`
+              const stored = localStorage.getItem(storageKey)
+              if (stored) {
+                sessionStorage.setItem(storageKey, stored)
+                localStorage.removeItem(storageKey)
+              }
+            }
+          } catch {
+            // URL parsing failed — skip session storage migration
           }
         }
 

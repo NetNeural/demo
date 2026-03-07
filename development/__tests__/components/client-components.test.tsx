@@ -173,6 +173,11 @@ jest.mock('@/lib/supabase/client', () => ({
         Promise.resolve({ data: [], error: null }).catch(reject)
       return chain
     }
+    const mockSubscription = {
+      on: () => mockSubscription,
+      subscribe: () => mockSubscription,
+      unsubscribe: jest.fn(),
+    }
     return {
       auth: {
         getUser: async () => ({
@@ -193,6 +198,8 @@ jest.mock('@/lib/supabase/client', () => ({
         signInWithPassword: async () => ({ error: null }),
       },
       from: (_table: string) => makeChain(),
+      channel: () => mockSubscription,
+      removeChannel: jest.fn(),
     }
   },
 }))

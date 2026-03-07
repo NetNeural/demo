@@ -37,6 +37,7 @@ concurrency:
 jobs:
   deploy-dev:
     runs-on: ubuntu-latest
+    if: github.repository == 'NetNeural/demo'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
