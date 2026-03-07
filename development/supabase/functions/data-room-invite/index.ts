@@ -58,9 +58,10 @@ serve(async (req) => {
       organizationId?: string
       action?: 'invite' | 'revoke'
       guestId?: string
+      accessDuration?: '24' | '48' | '72' | 'unlimited'
     }
 
-    const { email, organizationId, action, guestId } = body
+    const { email, organizationId, action, guestId, accessDuration = 'unlimited' } = body
 
     if (!organizationId) {
       return jsonResponse({ error: 'organizationId is required' }, 400)
@@ -225,6 +226,14 @@ serve(async (req) => {
       membershipId = membership?.id || null
     }
 
+    // Calculate expiry
+    const now = new Date()
+    let expiresAt: string | null = null
+    if (accessDuration !== 'unlimited') {
+      const hours = parseInt(accessDuration, 10)
+      expiresAt = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString()
+    }
+
     // Create or update data_room_guests record
     if (existingGuest && existingGuest.status === 'revoked') {
       // Re-invite a previously revoked guest
@@ -235,10 +244,12 @@ serve(async (req) => {
           user_id: guestUserId,
           invited_by: caller.id,
           membership_id: membershipId,
-          activated_at: new Date().toISOString(),
+          activated_at: now.toISOString(),
           revoked_at: null,
           revoked_by: null,
           token: crypto.randomUUID(),
+          access_duration: accessDuration,
+          expires_at: expiresAt,
         })
         .eq('id', existingGuest.id)
     } else {
@@ -252,7 +263,9 @@ serve(async (req) => {
           invited_by: caller.id,
           status: 'active',
           membership_id: membershipId,
-          activated_at: new Date().toISOString(),
+          activated_at: now.toISOString(),
+          access_duration: accessDuration,
+          expires_at: expiresAt,
         })
     }
 

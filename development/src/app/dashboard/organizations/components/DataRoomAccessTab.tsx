@@ -42,7 +42,15 @@ import {
   Download,
   FileText,
   Shield,
+  Timer,
 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +61,8 @@ interface DataRoomGuest {
   user_id: string | null
   invited_by: string
   status: 'pending' | 'active' | 'revoked'
+  access_duration?: '24' | '48' | '72' | 'unlimited'
+  expires_at?: string | null
   created_at: string
   activated_at: string | null
   revoked_at: string | null
@@ -90,6 +100,7 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
   const [logLoading, setLogLoading] = useState(true)
 
   const [inviteEmail, setInviteEmail] = useState('')
+  const [accessDuration, setAccessDuration] = useState<'24' | '48' | '72' | 'unlimited'>('unlimited')
   const [inviting, setInviting] = useState(false)
   const [inviteError, setInviteError] = useState('')
 
@@ -207,6 +218,7 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
           body: JSON.stringify({
             email: inviteEmail.trim(),
             organizationId,
+            accessDuration,
           }),
         }
       )
@@ -382,6 +394,21 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
                   disabled={inviting}
                   className="max-w-sm"
                 />
+                <Select
+                  value={accessDuration}
+                  onValueChange={(v) => setAccessDuration(v as '24' | '48' | '72' | 'unlimited')}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <Timer className="mr-1 h-4 w-4 text-muted-foreground" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="24">24 Hours</SelectItem>
+                    <SelectItem value="48">48 Hours</SelectItem>
+                    <SelectItem value="72">72 Hours</SelectItem>
+                    <SelectItem value="unlimited">Unlimited</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
                   {inviting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -421,9 +448,10 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
                     <TableRow>
                       <TableHead>Email</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Access</TableHead>
                       <TableHead>Invited By</TableHead>
                       <TableHead>Invited</TableHead>
-                      <TableHead>Activated</TableHead>
+                      <TableHead>Expires</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -434,7 +462,10 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
                           {guest.email}
                         </TableCell>
                         <TableCell>
-                          <StatusBadge status={guest.status} />
+                          <StatusBadge status={guest.status} expiresAt={guest.expires_at} />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          <AccessDurationBadge duration={guest.access_duration} />
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {guest.inviter_name || guest.inviter_email || '—'}
@@ -443,9 +474,7 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
                           {fmt.dateOnly(guest.created_at)}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {guest.activated_at
-                            ? fmt.dateOnly(guest.activated_at)
-                            : '—'}
+                          <ExpiryDisplay expiresAt={guest.expires_at} status={guest.status} />
                         </TableCell>
                         <TableCell className="text-right">
                           {guest.status === 'active' && (
@@ -583,7 +612,16 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
 
 // ── Helper Components ────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, expiresAt }: { status: string; expiresAt?: string | null }) {
+  // Check if active but expired
+  if (status === 'active' && expiresAt && new Date(expiresAt) < new Date()) {
+    return (
+      <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100 dark:bg-orange-900 dark:text-orange-200">
+        Expired
+      </Badge>
+    )
+  }
+
   switch (status) {
     case 'active':
       return (
@@ -606,4 +644,41 @@ function StatusBadge({ status }: { status: string }) {
     default:
       return <Badge variant="outline">{status}</Badge>
   }
+}
+
+function AccessDurationBadge({ duration }: { duration?: string }) {
+  const label = duration === '24' ? '24h'
+    : duration === '48' ? '48h'
+    : duration === '72' ? '72h'
+    : 'Unlimited'
+
+  return (
+    <Badge variant="outline" className="text-xs">
+      <Timer className="mr-1 h-3 w-3" />
+      {label}
+    </Badge>
+  )
+}
+
+function ExpiryDisplay({ expiresAt, status }: { expiresAt?: string | null; status: string }) {
+  if (!expiresAt) return <span className="text-muted-foreground/60">—</span>
+  if (status === 'revoked') return <span className="text-muted-foreground/60">—</span>
+
+  const expiry = new Date(expiresAt)
+  const now = new Date()
+  const isExpired = expiry < now
+
+  if (isExpired) {
+    return <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">Expired</span>
+  }
+
+  // Show time remaining
+  const diffMs = expiry.getTime() - now.getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+
+  if (diffHours > 0) {
+    return <span className="text-xs">{diffHours}h {diffMins}m left</span>
+  }
+  return <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">{diffMins}m left</span>
 }
