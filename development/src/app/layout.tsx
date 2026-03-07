@@ -43,7 +43,7 @@ export default function RootLayout({
         {/* GitHub Pages doesn't allow custom headers, so frame-ancestors is omitted here. */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: https://*.supabase.co wss://*.supabase.co https://api.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://staticimgly.com; worker-src 'self' blob:;"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' blob: https://*.supabase.co wss://*.supabase.co https://api.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://staticimgly.com https://nominatim.openstreetmap.org; worker-src 'self' blob:;"
         />
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         {/* Referrer policy — don't leak full URLs to third parties */}
