@@ -190,22 +190,39 @@ serve(async (req) => {
       }, { onConflict: 'id' })
     }
 
-    // Add as org member with 'viewer' role
-    const { data: membership, error: memberError } = await supabaseAdmin
+    // Check if user already has a membership in this org (e.g. they're an owner/admin)
+    const { data: existingMembership } = await supabaseAdmin
       .from('organization_members')
-      .upsert({
-        organization_id: organizationId,
-        user_id: guestUserId,
-        role: 'viewer',
-        invited_by: caller.id,
-        permissions: JSON.stringify(['data_room_only']),
-      }, { onConflict: 'organization_id,user_id' })
-      .select('id')
-      .single()
+      .select('id, role')
+      .eq('organization_id', organizationId)
+      .eq('user_id', guestUserId)
+      .maybeSingle()
 
-    if (memberError) {
-      console.error('[data-room-invite] Failed to create membership:', memberError)
-      return jsonResponse({ error: 'Failed to create membership' }, 500)
+    let membershipId: string | null = null
+
+    if (existingMembership) {
+      // User is already a member — reuse their existing membership, don't downgrade their role
+      console.log(`[data-room-invite] User already a ${existingMembership.role} member, reusing membership ${existingMembership.id}`)
+      membershipId = existingMembership.id
+    } else {
+      // Add as org member with 'viewer' role
+      const { data: membership, error: memberError } = await supabaseAdmin
+        .from('organization_members')
+        .insert({
+          organization_id: organizationId,
+          user_id: guestUserId,
+          role: 'viewer',
+          invited_by: caller.id,
+          permissions: JSON.stringify(['data_room_only']),
+        })
+        .select('id')
+        .single()
+
+      if (memberError) {
+        console.error('[data-room-invite] Failed to create membership:', memberError)
+        return jsonResponse({ error: 'Failed to create membership' }, 500)
+      }
+      membershipId = membership?.id || null
     }
 
     // Create or update data_room_guests record
@@ -217,7 +234,7 @@ serve(async (req) => {
           status: 'active',
           user_id: guestUserId,
           invited_by: caller.id,
-          membership_id: membership?.id || null,
+          membership_id: membershipId,
           activated_at: new Date().toISOString(),
           revoked_at: null,
           revoked_by: null,
@@ -234,7 +251,7 @@ serve(async (req) => {
           user_id: guestUserId,
           invited_by: caller.id,
           status: 'active',
-          membership_id: membership?.id || null,
+          membership_id: membershipId,
           activated_at: new Date().toISOString(),
         })
     }
