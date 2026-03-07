@@ -865,7 +865,7 @@ function BillingAdminContent() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="plans" className="mt-6">
-              <PlansPricingContent />
+              <PlansPricingContent skipGuard />
             </TabsContent>
             <TabsContent value="hydra-kpis" className="mt-6">
               <HydraKPIDashboardPage />

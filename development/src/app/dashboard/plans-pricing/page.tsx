@@ -63,18 +63,19 @@ import {
 const db = () => createClient() as any
 
 // ─── Access guard ─────────────────────────────────────────────────────
-function useAdminGuard() {
+function useAdminGuard(skipGuard = false) {
   const { user } = useUser()
   const { userRole } = useOrganization()
   const router = useRouter()
 
-  const isAllowed = user?.isSuperAdmin || userRole === 'owner'
+  const isAllowed = skipGuard || user?.isSuperAdmin || userRole === 'owner' || userRole === 'admin' || userRole === 'billing'
 
   useEffect(() => {
-    if (user && !user.isSuperAdmin && userRole && userRole !== 'owner') {
+    if (skipGuard) return
+    if (user && !user.isSuperAdmin && userRole && userRole !== 'owner' && userRole !== 'admin' && userRole !== 'billing') {
       router.replace('/dashboard')
     }
-  }, [user, userRole, router])
+  }, [user, userRole, router, skipGuard])
 
   return { isAllowed, loading: !user }
 }
@@ -901,8 +902,8 @@ function DeletePlanDialog({
 }
 
 // ─── Main admin page ──────────────────────────────────────────────────
-function PlansPricingContent() {
-  const { isAllowed, loading: guardLoading } = useAdminGuard()
+function PlansPricingContent({ skipGuard = false }: { skipGuard?: boolean } = {}) {
+  const { isAllowed, loading: guardLoading } = useAdminGuard(skipGuard)
   const { user } = useUser()
   const [plans, setPlans] = useState<BillingPlan[]>([])
   const [loading, setLoading] = useState(true)
