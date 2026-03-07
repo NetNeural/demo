@@ -9,6 +9,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { NETNEURAL_ORG_ID } from '@/lib/permissions'
 
 // ── AR Aging Types ─────────────────────────────────────────────────────
 
@@ -136,6 +137,7 @@ export async function fetchARAgingReport(
     `
     )
     .in('status', ['open'])
+    .neq('organization_id', NETNEURAL_ORG_ID)
 
   if (error) throw new Error(`AR Aging query failed: ${error.message}`)
 
@@ -236,6 +238,7 @@ export async function fetchPaymentFailureReport(
     )
     .gte('created_at', since.toISOString())
     .in('status', ['failed', 'succeeded'])
+    .neq('organization_id', NETNEURAL_ORG_ID)
 
   if (error) throw new Error(`Payment failure query failed: ${error.message}`)
 
@@ -367,6 +370,7 @@ export async function fetchTaxSummaryReport(
     .in('status', ['paid', 'open', 'draft'])
     .gte('created_at', startDate)
     .lt('created_at', endDate)
+    .neq('organization_id', NETNEURAL_ORG_ID)
 
   if (error) throw new Error(`Tax summary query failed: ${error.message}`)
 

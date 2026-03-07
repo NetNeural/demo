@@ -11,6 +11,7 @@ import type {
   LifecycleStage,
 } from '@/types/billing'
 import { getHealthStatus, getLifecycleStage } from '@/types/billing'
+import { NETNEURAL_ORG_ID } from '@/lib/permissions'
 
 /** Columns selected from admin_customer_overview view */
 const CUSTOMER_SELECT = `
@@ -76,6 +77,7 @@ export async function fetchCustomers(
   let query = supabase
     .from('admin_customer_overview')
     .select(CUSTOMER_SELECT, { count: 'exact' })
+    .neq('id', NETNEURAL_ORG_ID)
 
   // Search filter
   if (filters.search) {
@@ -133,6 +135,7 @@ export async function fetchCustomerSummary(
     .select(
       'id, is_active, mrr, health_score, subscription_status, cancel_at_period_end'
     )
+    .neq('id', NETNEURAL_ORG_ID)
 
   if (error || !data) {
     return {
@@ -183,6 +186,7 @@ export async function fetchHealthStatusCounts(
   const { data, error } = await supabase
     .from('admin_customer_overview')
     .select('health_score')
+    .neq('id', NETNEURAL_ORG_ID)
 
   const result: Record<HealthStatus | 'all', number> = {
     all: 0,

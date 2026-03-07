@@ -4,6 +4,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { NETNEURAL_ORG_ID } from '@/lib/permissions'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -82,6 +83,7 @@ export async function fetchRevenueSummary(
       'id, billing_plan:billing_plans!inner(price_monthly, price_per_device, pricing_model)'
     )
     .eq('status', 'active')
+    .neq('organization_id', NETNEURAL_ORG_ID)
 
   let totalMrr = 0
   const activeCount = activeData?.length ?? 0
@@ -108,6 +110,7 @@ export async function fetchRevenueSummary(
     .select('id, billing_plan:billing_plans!inner(price_monthly)')
     .in('status', ['active', 'canceled'])
     .lte('created_at', lastMonthEnd.toISOString())
+    .neq('organization_id', NETNEURAL_ORG_ID)
 
   let prevMrr = 0
   if (prevData) {
@@ -126,10 +129,12 @@ export async function fetchRevenueSummary(
     .from('organizations')
     .select('id', { count: 'exact', head: true })
     .eq('lifecycle_stage', 'churned')
+    .neq('id', NETNEURAL_ORG_ID)
 
   const { count: totalCustomers } = await supabase
     .from('organizations')
     .select('id', { count: 'exact', head: true })
+    .neq('id', NETNEURAL_ORG_ID)
 
   const churnRate =
     totalCustomers && totalCustomers > 0
@@ -141,6 +146,7 @@ export async function fetchRevenueSummary(
     .from('organizations')
     .select('id', { count: 'exact', head: true })
     .eq('lifecycle_stage', 'trial')
+    .neq('id', NETNEURAL_ORG_ID)
 
   const { count: wasTrialNowPaid } = await supabase
     .from('customer_lifecycle_events')
@@ -203,6 +209,7 @@ export async function fetchMrrTrend(
       .select('id, billing_plan:billing_plans!inner(price_monthly)')
       .in('status', ['active', 'past_due', 'trialing'])
       .lte('created_at', monthEnd.toISOString())
+      .neq('organization_id', NETNEURAL_ORG_ID)
 
     let mrr = 0
     const count = data?.length ?? 0
@@ -229,6 +236,7 @@ export async function fetchRevenueByPlan(
     .from('subscriptions')
     .select('id, billing_plan:billing_plans!inner(name, slug, price_monthly)')
     .eq('status', 'active')
+    .neq('organization_id', NETNEURAL_ORG_ID)
 
   if (!data?.length) return []
 
@@ -274,6 +282,7 @@ export async function fetchCustomersByPlan(
     .from('subscriptions')
     .select('id, billing_plan:billing_plans!inner(name, slug)')
     .eq('status', 'active')
+    .neq('organization_id', NETNEURAL_ORG_ID)
 
   const planMap = new Map<
     string,
@@ -297,6 +306,7 @@ export async function fetchCustomersByPlan(
   const { count: totalOrgs } = await supabase
     .from('organizations')
     .select('id', { count: 'exact', head: true })
+    .neq('id', NETNEURAL_ORG_ID)
 
   const subscribedCount = data?.length ?? 0
   const noPlanCount = (totalOrgs ?? 0) - subscribedCount
@@ -358,6 +368,7 @@ export async function fetchMrrWaterfall(
       .select('id, billing_plan:billing_plans!inner(price_monthly)')
       .gte('created_at', monthStart.toISOString())
       .lt('created_at', monthEnd.toISOString())
+      .neq('organization_id', NETNEURAL_ORG_ID)
 
     let newMrr = 0
     if (newSubs) {
@@ -374,6 +385,7 @@ export async function fetchMrrWaterfall(
       .eq('to_stage', 'churned')
       .gte('created_at', monthStart.toISOString())
       .lt('created_at', monthEnd.toISOString())
+      .neq('organization_id', NETNEURAL_ORG_ID)
 
     // Get MRR that was lost for each churned org
     let churnedMrr = 0
