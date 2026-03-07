@@ -484,7 +484,7 @@ export function LocationsTab({ organizationId }: LocationsTabProps) {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto bg-white text-black dark:bg-white dark:text-black">
+        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingLocation ? 'Edit Location' : 'Add New Location'}
