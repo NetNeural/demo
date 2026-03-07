@@ -79,6 +79,12 @@ export function SecurityTab() {
   const [unenrolling, setUnenrolling] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
 
+  // Recovery codes state
+  const [recoveryCodesLoading, setRecoveryCodesLoading] = useState(false)
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
+  const [codesCopied, setCodesCopied] = useState(false)
+  const [hasRecoveryCodes, setHasRecoveryCodes] = useState(false)
+
   const [sessions, setSessions] = useState<Session[]>([])
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
 
@@ -144,9 +150,16 @@ export function SecurityTab() {
       if (verified) {
         setMfaEnrolled(true)
         setMfaFactorId(verified.id)
+        // Check for existing recovery codes
+        const { count } = await supabase
+          .from('mfa_recovery_codes' as never)
+          .select('id', { count: 'exact', head: true })
+          .is('used_at', null)
+        setHasRecoveryCodes((count ?? 0) > 0)
       } else {
         setMfaEnrolled(false)
         setMfaFactorId(null)
+        setHasRecoveryCodes(false)
       }
     } catch (err) {
       console.error('MFA status check error:', err)
@@ -532,6 +545,73 @@ export function SecurityTab() {
     setShowSecret(false)
   }
 
+  const handleGenerateRecoveryCodes = async () => {
+    try {
+      setRecoveryCodesLoading(true)
+      const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) {
+        toast({
+          title: 'Error',
+          description: 'You must be signed in to generate recovery codes.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const res = await fetch(
+        `${supabaseUrl}/functions/v1/generate-recovery-codes`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      )
+
+      const result = await res.json()
+      if (!res.ok) {
+        toast({
+          title: 'Error',
+          description:
+            result?.error || 'Failed to generate recovery codes.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      setRecoveryCodes(result.codes)
+      setHasRecoveryCodes(true)
+      setCodesCopied(false)
+      toast({
+        title: 'Recovery Codes Generated',
+        description:
+          'Save these codes in a safe place. Each code can only be used once.',
+      })
+    } catch (err) {
+      console.error('Generate recovery codes error:', err)
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred.',
+        variant: 'destructive',
+      })
+    } finally {
+      setRecoveryCodesLoading(false)
+    }
+  }
+
+  const handleCopyRecoveryCodes = () => {
+    if (recoveryCodes) {
+      navigator.clipboard.writeText(recoveryCodes.join('\n'))
+      setCodesCopied(true)
+      toast({ title: 'Copied', description: 'Recovery codes copied to clipboard.' })
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Password */}
@@ -894,11 +974,96 @@ export function SecurityTab() {
               </div>
 
               {mfaEnrolled && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <Shield className="h-4 w-4" />
-                  Two-factor authentication is enabled
-                  {unenrolling && (
-                    <Loader2 className="ml-1 h-3 w-3 animate-spin" />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <Shield className="h-4 w-4" />
+                    Two-factor authentication is enabled
+                    {unenrolling && (
+                      <Loader2 className="ml-1 h-3 w-3 animate-spin" />
+                    )}
+                  </div>
+
+                  {/* Recovery codes display */}
+                  {recoveryCodes && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-200">
+                        <AlertCircle className="h-4 w-4" />
+                        Save your recovery codes
+                      </div>
+                      <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+                        Store these codes in a safe place. Each code can only be
+                        used once to sign in if you lose access to your
+                        authenticator app. Using a code will disable 2FA on your
+                        account.
+                      </p>
+                      <div className="mb-3 grid grid-cols-2 gap-2">
+                        {recoveryCodes.map((code, i) => (
+                          <code
+                            key={i}
+                            className="rounded bg-white px-2 py-1 text-center font-mono text-sm dark:bg-gray-800"
+                          >
+                            {code}
+                          </code>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyRecoveryCodes}
+                        >
+                          {codesCopied ? (
+                            <>
+                              <Check className="mr-1 h-3 w-3" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="mr-1 h-3 w-3" />
+                              Copy All
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setRecoveryCodes(null)}
+                        >
+                          Done
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Generate / regenerate button */}
+                  {!recoveryCodes && (
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateRecoveryCodes}
+                        disabled={recoveryCodesLoading}
+                      >
+                        {recoveryCodesLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="mr-2 h-3 w-3" />
+                            {hasRecoveryCodes
+                              ? 'Regenerate Recovery Codes'
+                              : 'Generate Recovery Codes'}
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        {hasRecoveryCodes
+                          ? 'Regenerating will invalidate your existing codes.'
+                          : 'Recovery codes let you sign in if you lose your authenticator app.'}
+                      </p>
+                    </div>
                   )}
                 </div>
               )}

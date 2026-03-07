@@ -122,6 +122,8 @@ function LoginForm() {
   const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
   const [mfaCode, setMfaCode] = useState('')
   const [mfaVerifying, setMfaVerifying] = useState(false)
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false)
+  const [recoveryCode, setRecoveryCode] = useState('')
 
   // Branding state
   const [branding, setBranding] = useState<OrgBranding | null>(null)
@@ -450,6 +452,82 @@ function LoginForm() {
     [mfaFactorId, mfaCode, router]
   )
 
+  // ── Recovery code verification handler ───────────────────────────────
+  const handleRecoveryCodeVerify = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!recoveryCode.trim()) {
+        setError('Please enter a recovery code.')
+        return
+      }
+      setMfaVerifying(true)
+      setError('')
+
+      try {
+        const supabase = createClient()
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/verify-recovery-code`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token}`,
+              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({ code: recoveryCode.trim() }),
+          }
+        )
+
+        const result = await res.json()
+
+        if (!res.ok) {
+          if (!isMounted.current) return
+          setError(result.error || 'Invalid recovery code. Please try again.')
+          setMfaVerifying(false)
+          return
+        }
+
+        // Recovery code accepted — MFA has been disabled, refresh session
+        hasCheckedAuth.current = true
+        await supabase.auth.refreshSession()
+
+        const {
+          data: { user: rcUser },
+        } = await supabase.auth.getUser()
+        if (rcUser) {
+          auditLogin(rcUser.id, rcUser.email || email.trim(), {
+            mfa: false,
+            recovery_code: true,
+          })
+
+          const { data: rcUserRecord } = await supabase
+            .from('users')
+            .select('password_change_required')
+            .eq('id', rcUser.id)
+            .single()
+
+          if (rcUserRecord?.password_change_required) {
+            router.push('/auth/change-password')
+            return
+          }
+        }
+
+        router.push('/dashboard')
+        setTimeout(() => router.refresh(), 50)
+      } catch {
+        if (!isMounted.current) return
+        setError('An unexpected error occurred. Please try again.')
+        setMfaVerifying(false)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [recoveryCode, router, email]
+  )
+
   // ── Forgot password handler ──────────────────────────────────────────
   const handleForgotPassword = useCallback(
     async (e: React.FormEvent) => {
@@ -752,6 +830,84 @@ function LoginForm() {
 
           {mfaRequired ? (
             /* ── MFA Verification Form ── */
+            useRecoveryCode ? (
+              /* ── Recovery Code Form ── */
+              <form onSubmit={handleRecoveryCodeVerify}>
+                <div className="mb-6">
+                  <div className="mb-4 flex justify-center">
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-full"
+                      style={{ background: `${colors.primary}20` }}
+                    >
+                      <Shield
+                        className="h-6 w-6"
+                        style={{ color: colors.primary }}
+                      />
+                    </div>
+                  </div>
+                  <p className="mb-3 text-center text-sm text-gray-400">
+                    Enter one of your recovery codes to sign in and disable 2FA.
+                  </p>
+                  <label
+                    className="mb-1.5 block text-center text-sm font-medium text-gray-300"
+                    htmlFor="recovery-code"
+                  >
+                    Recovery Code
+                  </label>
+                  <input
+                    id="recovery-code"
+                    type="text"
+                    maxLength={10}
+                    required
+                    value={recoveryCode}
+                    onChange={(e) =>
+                      setRecoveryCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))
+                    }
+                    placeholder="XXXXXXXX"
+                    autoComplete="off"
+                    autoFocus
+                    className="w-full rounded-lg border border-gray-700/60 bg-gray-800/60 px-4 py-4 text-center font-mono text-2xl tracking-[0.3em] text-gray-100 transition-all placeholder:text-gray-500 focus:outline-none focus:ring-2"
+                    style={{
+                      ['--tw-ring-color' as string]: `${colors.primary}80`,
+                    }}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={mfaVerifying || recoveryCode.length < 8}
+                  className="h-12 w-full rounded-lg text-base font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:brightness-110 disabled:opacity-50"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                    boxShadow: `0 4px 20px ${colors.primary}30`,
+                  }}
+                >
+                  {mfaVerifying ? (
+                    <span className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Verifying...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Use Recovery Code
+                    </span>
+                  )}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseRecoveryCode(false)
+                    setRecoveryCode('')
+                    setError('')
+                  }}
+                  className="mt-3 w-full text-center text-sm text-gray-500 transition-colors hover:text-gray-300"
+                >
+                  ← Back to authenticator code
+                </button>
+              </form>
+            ) : (
             <form onSubmit={handleMfaVerify}>
               <div className="mb-6">
                 <div className="mb-4 flex justify-center">
@@ -817,6 +973,19 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => {
+                  setUseRecoveryCode(true)
+                  setMfaCode('')
+                  setError('')
+                }}
+                className="mt-3 w-full text-center text-sm transition-colors hover:text-gray-300"
+                style={{ color: colors.primary }}
+              >
+                Lost your authenticator? Use a recovery code
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
                   setMfaRequired(false)
                   setMfaFactorId(null)
                   setMfaCode('')
@@ -825,11 +994,12 @@ function LoginForm() {
                   const supabase = createClient()
                   supabase.auth.signOut()
                 }}
-                className="mt-3 w-full text-center text-sm text-gray-500 transition-colors hover:text-gray-300"
+                className="mt-2 w-full text-center text-sm text-gray-500 transition-colors hover:text-gray-300"
               >
                 ← Back to sign in
               </button>
             </form>
+            )
           ) : forgotMode ? (
             /* ── Forgot Password Form ── */
             resetSent ? (

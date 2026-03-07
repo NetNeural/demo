@@ -38,6 +38,9 @@ export default function SetupMfaPage() {
   const [error, setError] = useState('')
   const [showSecret, setShowSecret] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
+  const [codesCopied, setCodesCopied] = useState(false)
+  const [needsPasswordChange, setNeedsPasswordChange] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -183,13 +186,42 @@ export default function SetupMfaPage() {
           .single()
 
         if (userRecord?.password_change_required) {
-          router.push('/auth/change-password')
-          return
+          setNeedsPasswordChange(true)
         }
       }
 
-      router.push('/dashboard')
-      setTimeout(() => router.refresh(), 50)
+      // Generate recovery codes
+      try {
+        const session = await supabase.auth.getSession()
+        const accessToken = session.data.session?.access_token
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-recovery-codes`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+              apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+          }
+        )
+        const result = await res.json()
+        if (result.data?.codes) {
+          setRecoveryCodes(result.data.codes)
+          setIsVerifying(false)
+          return // Don't navigate — show recovery codes screen
+        }
+      } catch (codeErr) {
+        console.error('Failed to generate recovery codes:', codeErr)
+      }
+
+      // If recovery code generation failed, continue to dashboard
+      if (needsPasswordChange) {
+        router.push('/auth/change-password')
+      } else {
+        router.push('/dashboard')
+        setTimeout(() => router.refresh(), 50)
+      }
     } catch (err) {
       console.error('MFA verify error:', err)
       setError('An unexpected error occurred during verification.')
@@ -222,6 +254,87 @@ export default function SetupMfaPage() {
             Setting up two-factor authentication...
           </p>
         </div>
+      </div>
+    )
+  }
+
+  // ── Recovery Codes Screen ──
+  if (recoveryCodes) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <div className="mb-4 flex items-center justify-center">
+              <div className="rounded-full bg-green-100 p-3">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+            <CardTitle className="text-center text-2xl">
+              Save Your Recovery Codes
+            </CardTitle>
+            <CardDescription className="text-center">
+              If you lose access to your authenticator app, you can use one of
+              these codes to sign in. Each code can only be used once.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Store these codes in a safe place (e.g. password manager).
+                They will not be shown again.
+              </AlertDescription>
+            </Alert>
+
+            <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg border bg-muted p-4">
+              {recoveryCodes.map((code, i) => (
+                <code
+                  key={i}
+                  className="rounded bg-background px-2 py-1.5 text-center font-mono text-sm tracking-wider"
+                >
+                  {code}
+                </code>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    recoveryCodes.join('\n')
+                  )
+                  setCodesCopied(true)
+                  setTimeout(() => setCodesCopied(false), 2000)
+                  toast({
+                    title: 'Copied',
+                    description: 'Recovery codes copied to clipboard',
+                  })
+                }}
+              >
+                {codesCopied ? (
+                  <><Check className="mr-2 h-4 w-4" /> Copied</>
+                ) : (
+                  <><Copy className="mr-2 h-4 w-4" /> Copy All</>
+                )}
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  if (needsPasswordChange) {
+                    router.push('/auth/change-password')
+                  } else {
+                    router.push('/dashboard')
+                    setTimeout(() => router.refresh(), 50)
+                  }
+                }}
+              >
+                I&apos;ve Saved These Codes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
