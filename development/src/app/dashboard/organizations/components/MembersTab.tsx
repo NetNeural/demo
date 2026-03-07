@@ -63,6 +63,7 @@ const SEAT_LIMITS: Record<string, number> = {
   business: 25,
   enterprise: -1,
   unlimited: -1,
+  platform_owner: -1,
   reseller: -1,
 }
 
