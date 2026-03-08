@@ -58,7 +58,7 @@ serve(async (req) => {
       organizationId?: string
       action?: 'invite' | 'revoke'
       guestId?: string
-      accessDuration?: '24' | '48' | '72' | 'unlimited'
+      accessDuration?: '0.25' | '0.5' | '1' | '6' | '24' | '48' | '72' | 'unlimited'
     }
 
     const { email, organizationId, action, guestId, accessDuration = 'unlimited' } = body
@@ -236,7 +236,7 @@ serve(async (req) => {
     const now = new Date()
     let expiresAt: string | null = null
     if (accessDuration !== 'unlimited') {
-      const hours = parseInt(accessDuration, 10)
+      const hours = parseFloat(accessDuration)
       expiresAt = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString()
     }
 

@@ -61,7 +61,7 @@ interface DataRoomGuest {
   user_id: string | null
   invited_by: string
   status: 'pending' | 'active' | 'revoked'
-  access_duration?: '24' | '48' | '72' | 'unlimited'
+  access_duration?: '0.25' | '0.5' | '1' | '6' | '24' | '48' | '72' | 'unlimited'
   expires_at?: string | null
   created_at: string
   activated_at: string | null
@@ -100,7 +100,7 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
   const [logLoading, setLogLoading] = useState(true)
 
   const [inviteEmail, setInviteEmail] = useState('')
-  const [accessDuration, setAccessDuration] = useState<'24' | '48' | '72' | 'unlimited'>('unlimited')
+  const [accessDuration, setAccessDuration] = useState<'0.25' | '0.5' | '1' | '6' | '24' | '48' | '72' | 'unlimited'>('unlimited')
   const [inviting, setInviting] = useState(false)
   const [inviteError, setInviteError] = useState('')
 
@@ -396,13 +396,17 @@ export function DataRoomAccessTab({ organizationId }: DataRoomAccessTabProps) {
                 />
                 <Select
                   value={accessDuration}
-                  onValueChange={(v) => setAccessDuration(v as '24' | '48' | '72' | 'unlimited')}
+                  onValueChange={(v) => setAccessDuration(v as '0.25' | '0.5' | '1' | '6' | '24' | '48' | '72' | 'unlimited')}
                 >
                   <SelectTrigger className="w-[140px]">
                     <Timer className="mr-1 h-4 w-4 text-muted-foreground" />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="0.25">15 Minutes</SelectItem>
+                    <SelectItem value="0.5">30 Minutes</SelectItem>
+                    <SelectItem value="1">1 Hour</SelectItem>
+                    <SelectItem value="6">6 Hours</SelectItem>
                     <SelectItem value="24">24 Hours</SelectItem>
                     <SelectItem value="48">48 Hours</SelectItem>
                     <SelectItem value="72">72 Hours</SelectItem>
@@ -647,7 +651,11 @@ function StatusBadge({ status, expiresAt }: { status: string; expiresAt?: string
 }
 
 function AccessDurationBadge({ duration }: { duration?: string }) {
-  const label = duration === '24' ? '24h'
+  const label = duration === '0.25' ? '15m'
+    : duration === '0.5' ? '30m'
+    : duration === '1' ? '1h'
+    : duration === '6' ? '6h'
+    : duration === '24' ? '24h'
     : duration === '48' ? '48h'
     : duration === '72' ? '72h'
     : 'Unlimited'
