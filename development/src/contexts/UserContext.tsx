@@ -131,8 +131,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const { data: aal } =
           await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
         if (aal && aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2') {
-          // Session is aal1 but aal2 is required — MFA challenge not completed
-          await supabase.auth.signOut()
+          // Session is aal1 but aal2 is required — redirect to login for MFA challenge
+          // Don't sign out — the login page will detect the aal1 session and show
+          // the MFA code entry screen directly (no need to re-enter password)
           router.push(`/auth/login?redirect=${getReturnUrl()}`)
           return
         }

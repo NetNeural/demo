@@ -255,12 +255,22 @@ function LoginForm() {
 
           if (hasVerifiedTotp) {
             // Verify session has aal2 (completed MFA challenge)
-            // Prevents back-button bypass: aal1 session should not auto-redirect to dashboard
+            // If aal1 — auto-trigger MFA challenge instead of showing login form
             const { data: aal } =
               await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
             if (aal && aal.currentLevel === 'aal1' && aal.nextLevel === 'aal2') {
+              // Find the verified TOTP factor and trigger MFA challenge screen
+              const totpFactor = mfaFactors?.totp?.find(
+                (f) => f.status === 'verified'
+              )
+              if (totpFactor) {
+                setMfaFactorId(totpFactor.id)
+                setMfaRequired(true)
+                hasCheckedAuth.current = true
+                return // Show MFA challenge screen (not login form)
+              }
               hasCheckedAuth.current = true
-              return // Stay on login page — user must complete MFA
+              return // Fallback: stay on login page
             }
           }
 

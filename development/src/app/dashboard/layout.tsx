@@ -94,6 +94,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
+    // Actually redirect to login with return URL instead of showing dead text
+    const returnUrl = typeof window !== 'undefined'
+      ? encodeURIComponent(window.location.pathname + window.location.search)
+      : '%2Fdashboard'
+    if (typeof window !== 'undefined') {
+      window.location.href = `/auth/login?redirect=${returnUrl}`
+    }
     return <div className="p-6">Redirecting to login...</div>
   }
 
