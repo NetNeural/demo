@@ -187,7 +187,7 @@ serve(async (req) => {
         id: guestUserId,
         email: normalizedEmail,
         full_name: normalizedEmail.split('@')[0],
-        role: 'user', // data room guests get minimal platform role; access is scoped via org membership (viewer)
+        role: 'viewer', // data room guests get viewer platform role; matches org membership role
       }, { onConflict: 'id' })
     }
 

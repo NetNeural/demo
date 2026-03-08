@@ -109,11 +109,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser(userProfile)
       hasRedirected.current = false
 
+      // Data room guests (invited via data-room-invite edge function) should NOT be
+      // forced through MFA — they have view-only access (data_room_only permissions)
+      // and requiring TOTP setup creates an unacceptable barrier for guest viewers.
+      const isDataRoomGuest = session.user?.user_metadata?.data_room_guest === true
+
       // Check if user needs MFA setup (before password check so MFA is enforced first)
       // MFA enforcement is disabled on dev (demo.netneural.ai) for E2E testing
       const isMfaEnforced = !process.env.NEXT_PUBLIC_DISABLE_MFA_ENFORCEMENT
       if (
         isMfaEnforced &&
+        !isDataRoomGuest &&
         pathname !== '/auth/setup-mfa' &&
         pathname !== '/auth/change-password'
       ) {
