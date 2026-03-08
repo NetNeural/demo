@@ -67,13 +67,19 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
   if (!organization && profile.role !== 'super_admin' && profile.role !== 'platform_admin') {
     const { data: membership } = await supabase
       .from('organization_members')
-      .select('organization_id, organizations(id, name)')
+      .select('organization_id, role, organizations(id, name)')
       .eq('user_id', user.id)
       .limit(1)
       .single()
 
     if (membership?.organizations) {
       organization = membership.organizations as { id: string; name: string }
+      // Use the membership role when users.role is the generic 'user' default.
+      // Data room guests have organization_members.role='viewer' but old invites
+      // left users.role='user' — prefer the more specific membership role.
+      if (profile.role === 'user' && membership.role) {
+        profile.role = membership.role
+      }
     }
   }
 

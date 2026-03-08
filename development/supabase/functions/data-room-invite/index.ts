@@ -164,6 +164,12 @@ serve(async (req) => {
 
     if (existingAuthUser) {
       guestUserId = existingAuthUser.id
+      // Ensure existing users get the data_room_guest metadata flag and viewer role
+      // so MFA enforcement is skipped for them
+      await supabaseAdmin.auth.admin.updateUserById(guestUserId, {
+        user_metadata: { ...existingAuthUser.user_metadata, data_room_guest: true },
+      })
+      await supabaseAdmin.from('users').update({ role: 'viewer' }).eq('id', guestUserId).eq('role', 'user')
     } else {
       // Create a new auth user with a temporary password
       // They'll be sent a "set password" email
