@@ -863,6 +863,27 @@ export function AlertsThresholdsCard({
                     <SelectItem value="light">Light Level</SelectItem>
                     <SelectItem value="motion">Motion</SelectItem>
                     <SelectItem value="vibration">Vibration</SelectItem>
+                    {/* Phone sensor types */}
+                    <SelectItem value="latitude">GPS Latitude</SelectItem>
+                    <SelectItem value="longitude">GPS Longitude</SelectItem>
+                    <SelectItem value="altitude">GPS Altitude</SelectItem>
+                    <SelectItem value="speed">GPS Speed</SelectItem>
+                    <SelectItem value="accel_x">Accelerometer X</SelectItem>
+                    <SelectItem value="accel_y">Accelerometer Y</SelectItem>
+                    <SelectItem value="accel_z">Accelerometer Z</SelectItem>
+                    <SelectItem value="gyro_x">Gyroscope X</SelectItem>
+                    <SelectItem value="gyro_y">Gyroscope Y</SelectItem>
+                    <SelectItem value="gyro_z">Gyroscope Z</SelectItem>
+                    <SelectItem value="mag_x">Magnetometer X</SelectItem>
+                    <SelectItem value="mag_y">Magnetometer Y</SelectItem>
+                    <SelectItem value="mag_z">Magnetometer Z</SelectItem>
+                    <SelectItem value="illuminance">Ambient Light</SelectItem>
+                    <SelectItem value="proximity">Proximity</SelectItem>
+                    <SelectItem value="battery_level">Battery Level (Phone)</SelectItem>
+                    <SelectItem value="ambient_temperature">Ambient Temperature</SelectItem>
+                    <SelectItem value="sound_level">Sound Level</SelectItem>
+                    <SelectItem value="step_count">Step Count</SelectItem>
+                    <SelectItem value="wifi_rssi">WiFi Signal</SelectItem>
                     <SelectItem value="custom">Custom...</SelectItem>
                   </SelectContent>
                 </Select>
@@ -878,6 +899,26 @@ export function AlertsThresholdsCard({
                     'light',
                     'motion',
                     'vibration',
+                    'latitude',
+                    'longitude',
+                    'altitude',
+                    'speed',
+                    'accel_x',
+                    'accel_y',
+                    'accel_z',
+                    'gyro_x',
+                    'gyro_y',
+                    'gyro_z',
+                    'mag_x',
+                    'mag_y',
+                    'mag_z',
+                    'illuminance',
+                    'proximity',
+                    'battery_level',
+                    'ambient_temperature',
+                    'sound_level',
+                    'step_count',
+                    'wifi_rssi',
                   ].includes(formData.sensor_type)) && (
                   <Input
                     value={formData.sensor_type}

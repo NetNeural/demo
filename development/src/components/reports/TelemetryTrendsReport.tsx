@@ -110,6 +110,28 @@ const SENSOR_TYPES = [
   { value: 'co2', label: 'CO₂', unit: 'ppm' },
   { value: 'voc', label: 'VOC', unit: 'ppb' },
   { value: 'light', label: 'Light', unit: 'lux' },
+  // Phone sensor types
+  { value: 'latitude', label: 'GPS Latitude', unit: '°' },
+  { value: 'longitude', label: 'GPS Longitude', unit: '°' },
+  { value: 'altitude', label: 'GPS Altitude', unit: 'm' },
+  { value: 'speed', label: 'GPS Speed', unit: 'm/s' },
+  { value: 'heading', label: 'GPS Heading', unit: '°' },
+  { value: 'accel_x', label: 'Accelerometer X', unit: 'm/s²' },
+  { value: 'accel_y', label: 'Accelerometer Y', unit: 'm/s²' },
+  { value: 'accel_z', label: 'Accelerometer Z', unit: 'm/s²' },
+  { value: 'gyro_x', label: 'Gyroscope X', unit: '°/s' },
+  { value: 'gyro_y', label: 'Gyroscope Y', unit: '°/s' },
+  { value: 'gyro_z', label: 'Gyroscope Z', unit: '°/s' },
+  { value: 'mag_x', label: 'Magnetometer X', unit: 'µT' },
+  { value: 'mag_y', label: 'Magnetometer Y', unit: 'µT' },
+  { value: 'mag_z', label: 'Magnetometer Z', unit: 'µT' },
+  { value: 'illuminance', label: 'Ambient Light', unit: 'lux' },
+  { value: 'proximity', label: 'Proximity', unit: 'cm' },
+  { value: 'battery_level', label: 'Battery Level', unit: '%' },
+  { value: 'ambient_temperature', label: 'Ambient Temp', unit: '°C' },
+  { value: 'sound_level', label: 'Sound Level', unit: 'dBA' },
+  { value: 'step_count', label: 'Step Count', unit: 'steps' },
+  { value: 'wifi_rssi', label: 'WiFi Signal', unit: 'dBm' },
 ]
 
 const TIME_RANGES = [

@@ -149,7 +149,7 @@ function isGatewayDevice(deviceType: string, deviceName: string): boolean {
   )
 }
 
-// Config for flat JSONB telemetry (MQTT / modular test sensor)
+// Config for flat JSONB telemetry (MQTT / modular test sensor / phone sensors)
 const JSONB_SENSOR_CONFIG: Record<string, { label: string; unit: string }> = {
   temperature: { label: 'Temperature', unit: '°C' },
   humidity: { label: 'Humidity', unit: '%' },
@@ -162,6 +162,40 @@ const JSONB_SENSOR_CONFIG: Record<string, { label: string; unit: string }> = {
   BatteryTx: { label: 'Battery (TX)', unit: 'mV' },
   GwRssi: { label: 'GW RSSI', unit: 'dBm' },
   GwSnr: { label: 'GW SNR', unit: 'dB' },
+  // Phone sensor telemetry keys
+  latitude: { label: 'GPS Latitude', unit: '°' },
+  longitude: { label: 'GPS Longitude', unit: '°' },
+  altitude: { label: 'GPS Altitude', unit: 'm' },
+  speed: { label: 'GPS Speed', unit: 'm/s' },
+  heading: { label: 'GPS Heading', unit: '°' },
+  gps_accuracy: { label: 'GPS Accuracy', unit: 'm' },
+  accel_x: { label: 'Accelerometer X', unit: 'm/s²' },
+  accel_y: { label: 'Accelerometer Y', unit: 'm/s²' },
+  accel_z: { label: 'Accelerometer Z', unit: 'm/s²' },
+  gyro_x: { label: 'Gyroscope X', unit: '°/s' },
+  gyro_y: { label: 'Gyroscope Y', unit: '°/s' },
+  gyro_z: { label: 'Gyroscope Z', unit: '°/s' },
+  mag_x: { label: 'Magnetometer X', unit: 'µT' },
+  mag_y: { label: 'Magnetometer Y', unit: 'µT' },
+  mag_z: { label: 'Magnetometer Z', unit: 'µT' },
+  illuminance: { label: 'Ambient Light', unit: 'lux' },
+  proximity: { label: 'Proximity', unit: 'cm' },
+  battery_level: { label: 'Battery Level', unit: '%' },
+  battery_charging: { label: 'Battery Charging', unit: '' },
+  ambient_temperature: { label: 'Ambient Temperature', unit: '°C' },
+  sound_level: { label: 'Sound Level', unit: 'dBA' },
+  relative_humidity: { label: 'Relative Humidity', unit: '%' },
+  step_count: { label: 'Step Count', unit: 'steps' },
+  gravity_x: { label: 'Gravity X', unit: 'm/s²' },
+  gravity_y: { label: 'Gravity Y', unit: 'm/s²' },
+  gravity_z: { label: 'Gravity Z', unit: 'm/s²' },
+  linear_accel_x: { label: 'Linear Accel X', unit: 'm/s²' },
+  linear_accel_y: { label: 'Linear Accel Y', unit: 'm/s²' },
+  linear_accel_z: { label: 'Linear Accel Z', unit: 'm/s²' },
+  rotation_x: { label: 'Rotation X', unit: '' },
+  rotation_y: { label: 'Rotation Y', unit: '' },
+  rotation_z: { label: 'Rotation Z', unit: '' },
+  wifi_rssi: { label: 'WiFi Signal', unit: 'dBm' },
 }
 
 /**

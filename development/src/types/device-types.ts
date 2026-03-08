@@ -58,7 +58,7 @@ export const DEVICE_CLASSES = [
   {
     value: 'smartphone',
     label: 'Smartphone / Mobile',
-    suggestedUnits: ['°', 'm/s²', '°/s', 'µT', 'lux', 'hPa', '%'],
+    suggestedUnits: ['°', 'm/s²', '°/s', 'µT', 'lux', 'hPa', '%', 'dBA', 'm', 'm/s', '°C', 'steps', 'cm', 'dBm'],
   },
   { value: 'other', label: 'Other', suggestedUnits: [] },
 ] as const
